@@ -19,7 +19,6 @@ namespace QuickSort_D
             Random rand = new Random(seed);
             if (File.Exists(filename))
                 File.Delete(filename);
-
             try
             {
                 using (BinaryWriter writer = new BinaryWriter(File.Open(filename, FileMode.Create)))
