@@ -4,99 +4,211 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
+using System.Diagnostics;
+
 namespace QuickSort_D
 {
-    class MyFileList : DataList
+    class Program
     {
-
-        int prevNode;
-        int currentNode;
-        int nextNode;
-
-        public MyFileList(string filename, int n, int seed)
+        static void Main(string[] args)
         {
-            length = n;
-            Random rand = new Random(seed);
-            if (File.Exists(filename))
-                File.Delete(filename);
-            try
+            int seed = (int)DateTime.Now.Ticks & 0x0000FFFF;
+
+            // Antras etapas            
+            int n = 12;
+            string filename;
+
+            filename = @"mydataarray.dat";
+            MyFileArray myfilearray = new MyFileArray(filename, n, seed);
+
+            using (myfilearray.fs = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
-                using (BinaryWriter writer = new BinaryWriter(File.Open(filename, FileMode.Create)))
+                Console.WriteLine("\n FILE ARRAY \n");
+                myfilearray.Print(n);
+                QuickSort(myfilearray, 0, n - 1);
+                myfilearray.Print(n);
+            }
+
+            filename = @"mydatalist.dat";
+            MyFileList myfilelist = new MyFileList(filename, n, seed);
+
+            using (myfilelist.fs = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+            {
+                Console.WriteLine("\n FILE LIST \n");
+                myfilelist.Print(n);
+                QuickSort(myfilelist, 0, n - 1);
+                myfilelist.Print(n);
+            }
+
+            SpeedTest();
+        }
+
+        private static void SpeedTest()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+
+            string filename1 = @"mydataarray.dat";
+            string filename2 = @"mydatalist.dat";
+
+            MyFileArray myArray;
+            MyFileList myList;
+
+            int seed = (int)DateTime.Now.Ticks & 0x0000FFFF;
+
+            int[] numbers = { 100, 200, 400, 800, 1600, 3200, 6400 };
+
+            Console.WriteLine("EXTERNAL MEMORY ARRAY QUICK SORT");
+            Console.WriteLine("|---------------------------|");
+            Console.WriteLine("|  N          |  Run time   |");
+            Console.WriteLine("|---------------------------|");
+            foreach (int number in numbers)
+            {
+                //speed test for array
+                myArray = new MyFileArray(filename1, number, seed);
+                using (myArray.fs = new FileStream(filename1, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    writer.Write(4);
-                    for (int j = 0; j < length; j++)
-                    {
-                        writer.Write(rand.NextDouble());
-                        writer.Write((j + 1) * 12 + 4);
-                    }
+
+                    stopWatch.Start();
+                    QuickSort(myArray, 0, number - 1);
+                    stopWatch.Stop();
+
+                }
+
+                Console.WriteLine("|  {0,-9}  |  {1,2}:{2,2}:{3,3}  |", number,
+                    stopWatch.Elapsed.Minutes, stopWatch.Elapsed.Seconds, stopWatch.Elapsed.Milliseconds);
+
+                //reseting stop watch
+                stopWatch.Reset();
+            }
+            Console.WriteLine("|---------------------------|\n");
+
+            Console.WriteLine("EXTERNAL MEMORY LIST QUICK SORT");
+            Console.WriteLine("|---------------------------|");
+            Console.WriteLine("|  N          |  Run time   |");
+            Console.WriteLine("|---------------------------|");
+            foreach (int number in numbers)
+            {
+                //speed test for array
+                myList = null;
+                myList = new MyFileList(filename2, number, seed);
+                using (myList.fs = new FileStream(filename2, FileMode.Open, FileAccess.ReadWrite))
+                {
+
+                    stopWatch.Start();
+                    QuickSort(myList, 0, number - 1);
+                    stopWatch.Stop();
+
+                }
+
+                Console.WriteLine("|  {0,-9}  |  {1,2}:{2,2}:{3,3}  |", number,
+                    stopWatch.Elapsed.Minutes, stopWatch.Elapsed.Seconds, stopWatch.Elapsed.Milliseconds);
+
+                //reseting stop watch
+                stopWatch.Reset();
+            }
+            Console.WriteLine("|---------------------------|");
+        }
+
+        /* The main function that implements QuickSort() 
+         * arr[] --> Array to be sorted, 
+         * low --> Starting index, 
+         * high --> Ending index */
+        static void QuickSort(DataArray arr, int low, int high)
+        {
+            if (low < high)
+            {
+
+                /* pi is partitioning index, arr[pi] is  
+                now at right place */
+                int pi = partition(arr, low, high);
+
+                // Recursively sort elements before 
+                // partition and after partition 
+                QuickSort(arr, low, pi - 1);
+                QuickSort(arr, pi + 1, high);
+            }
+        }
+
+        /* This function takes last element as pivot, 
+         * places the pivot element at its correct 
+         * position in sorted array, and places all 
+         * smaller (smaller than pivot) to left of 
+         * pivot and all greater elements to right 
+         * of pivot */
+        static int partition(DataArray arr, int low, int high)
+        {
+            double pivot = arr[high];
+
+            // index of smaller element 
+            int i = (low - 1);
+            for (int j = low; j < high; j++)
+            {
+                // If current element is smaller  
+                // than or equal to pivot 
+                if (arr[j] <= pivot)
+                {
+                    i++;
+
+                    // swap arr[i] and arr[j] 
+                    arr.Swap(i, j, arr[i], arr[high]);
                 }
             }
-            catch (IOException ex)
+
+            // swap arr[i+1] and arr[high] (or pivot) 
+            arr.Swap(i + 1, high, arr[low], arr[high]);
+
+            return i + 1;
+        }
+
+        /* The main function that implements QuickSort() 
+         * arr[] --> Array to be sorted, 
+         * low --> Starting index, 
+         * high --> Ending index */
+        static void QuickSort(DataList arr, int low, int high)
+        {
+            if (low < high)
             {
-                Console.WriteLine(ex.ToString());
+
+                /* pi is partitioning index, arr[pi] is  
+                now at right place */
+                int pi = partition(arr, low, high);
+
+                // Recursively sort elements before 
+                // partition and after partition 
+                QuickSort(arr, low, pi - 1);
+                QuickSort(arr, pi + 1, high);
             }
         }
 
-        public FileStream fs { get; set; }
-
-        public override double Head()
+        /* This function takes last element as pivot, 
+         * places the pivot element at its correct 
+         * position in sorted array, and places all 
+         * smaller (smaller than pivot) to left of 
+         * pivot and all greater elements to right 
+         * of pivot */
+        static int partition(DataList arr, int low, int high)
         {
-            Byte[] data = new Byte[12];
-            fs.Seek(0, SeekOrigin.Begin);
-            fs.Read(data, 0, 4);
-            currentNode = BitConverter.ToInt32(data, 0);
-            prevNode = -1;
-            fs.Seek(currentNode, SeekOrigin.Begin);
-            fs.Read(data, 0, 12);
-            double result = BitConverter.ToDouble(data, 0);
-            nextNode = BitConverter.ToInt32(data, 8);
-            return result;
-        }
+            double pivot = arr.Value(high);
 
-        public override double Next()
-        {
-            Byte[] data = new Byte[12];
-            fs.Seek(nextNode, SeekOrigin.Begin);
-            fs.Read(data, 0, 12);
-            prevNode = currentNode;
-            currentNode = nextNode;
-            double result = BitConverter.ToDouble(data, 0);
-            nextNode = BitConverter.ToInt32(data, 8);
-            return result;
-        }
-
-        public override double Value(int Nr)
-        {
-            int i = 0;
-            double result = Head();
-
-            while (i != Nr)
+            // index of smaller element 
+            int i = (low - 1);
+            for (int j = low; j < high; j++)
             {
-                i++;
-                result = Next();
+                // If current element is smaller  
+                // than or equal to pivot 
+                if (arr.Value(j) <= pivot)
+                {
+                    i++;
 
+                    // swap arr[i] and arr[j] 
+                    arr.Swap(i, j);
+                }
             }
 
-            return result;
+            // swap arr[i+1] and arr[high] (or pivot) 
+            arr.Swap(i + 1, high);
 
-        }
-
-        public override void Swap(int a, int b)
-        {
-            Byte[] data;
-
-            double x = Value(b);
-            double y = Value(a);
-
-            Value(a);
-            fs.Seek(currentNode, SeekOrigin.Begin);
-            data = BitConverter.GetBytes(x);
-            fs.Write(data, 0, 8);
-
-            Value(b);
-            fs.Seek(currentNode, SeekOrigin.Begin);
-            data = BitConverter.GetBytes(y);
-            fs.Write(data, 0, 8);
+            return i + 1;
         }
 
     }
